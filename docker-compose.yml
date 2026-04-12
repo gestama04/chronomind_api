@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # Base de Dados Principal
+  db:
+    image: postgres:15-alpine
+    container_name: chronomind_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: chronopassword123
+      POSTGRES_DB: chronomind
+    ports:
+      - '5432:5432' # Mapeia a porta do contentor para o teu Windows
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Interface Visual para gerires a BD (Opcional, mas ajuda muito)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: chronomind_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '8080:80'
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
