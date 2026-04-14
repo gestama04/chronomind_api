@@ -4,21 +4,37 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   password  String
   name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  // Relação: Um utilizador pode ter várias decisões
+  decisions Decision[]
 
-  @@map("users") // Isto diz ao Postgres para chamar a tabela de "users" (minúsculas)
+  @@map("users")
+}
+
+model Decision {
+  id          String   @id @default(uuid())
+  userId      String   // Chave estrangeira
+  user        User     @relation(fields: [userId], references: [id])
+  
+  problemText String   // O que o utilizador perguntou
+  aiResponse  String   // A decisão curta e direta da IA
+  
+  createdAt   DateTime @default(now())
+
+  @@map("decisions")
 }
