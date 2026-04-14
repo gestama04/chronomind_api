@@ -16,17 +16,23 @@ export class AuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
+      console.log('ERRO GUARD: Token não encontrado no header');
       throw new UnauthorizedException('Token não encontrado');
     }
 
     try {
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: 'minha_chave_super_secreta_ruthless', // Tem de ser igual à do AuthModule
+        secret: 'minha_chave_super_secreta_ruthless',
       });
       
-      // Colocamos o payload (userId, email) no request para o controller usar
-      request['user'] = payload;
-    } catch {
+      // LOG DE EMERGÊNCIA: Vamos ver se o payload tem mesmo o userId
+      console.log('GUARD PAYLOAD:', payload);
+
+      // Usamos a atribuição direta no objeto request
+      request.user = payload; 
+      
+    } catch (e: any) {
+      console.log('ERRO GUARD: Falha ao verificar token:', e.message);
       throw new UnauthorizedException('Token inválido ou expirado');
     }
     
