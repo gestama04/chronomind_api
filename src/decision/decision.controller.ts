@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Request, Get } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request, Get, UnauthorizedException } from '@nestjs/common';
 import { DecisionService } from './decision.service';
 import { AuthGuard } from '../auth/auth.guard'; // Importa o guard que criámos antes
 
@@ -13,9 +13,14 @@ export class DecisionController {
     return this.decisionService.getHistory(userId);
   }
   @Post()
-  async makeDecision(@Request() req, @Body() body: { problem: string }) {
-    // O AuthGuard coloca os dados do utilizador dentro de req.user
-    const userId = req.user.userId; 
-    return this.decisionService.getDecision(userId, body.problem);
+  async makeDecision(@Body() body: { problem: string }, @Request() req) {
+    // Adiciona este log para vermos o que chega ao servidor nos logs do Render
+    console.log('User no Request:', req.user); 
+
+    if (!req.user || !req.user.userId) {
+      throw new UnauthorizedException('Utilizador não identificado no Token');
+    }
+
+    return this.decisionService.getDecision(body.problem, req.user.userId);
   }
 }
