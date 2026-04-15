@@ -7,13 +7,14 @@ export class DecisionService {
   private genAI: GoogleGenerativeAI;
 
   constructor(private prisma: PrismaService) {
-    // Inicializamos a IA com a chave que colocaste no .env
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   }
 
   async getDecision(userId: string, problem: string) {
+    let aiResponseText = ""; // Criamos a variável fora para sobreviver a falhas
+
     try {
-      // 1. Configurar a personalidade da IA (O Segredo do teu Produto)
+      // 1. Configurar a personalidade
       const model = this.genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
         systemInstruction: `You are 'Ruthless', an uncompromising AI decision maker. 
@@ -26,33 +27,51 @@ export class DecisionService {
         5. Reply in Portuguese (PT-PT).`,
       });
 
-      // 2. Pedir a decisão à IA
-      const result = await model.generateContent(problem);
-      const aiResponse = result.response.text().trim();
+      // 2. Pedir a decisão à IA (Com defesa contra a Google)
+      try {
+        const result = await model.generateContent(problem);
+        aiResponseText = result.response.text().trim();
+      } catch (iaError: any) {
+        if (iaError.status === 503) {
+          aiResponseText = "ATÉ A INTELIGÊNCIA ARTIFICIAL ESTÁ FARTA DE TI. VAI TRABALHAR.";
+        } else {
+          throw iaError; // Se for outro erro, passa para o catch de baixo
+        }
+      }
 
-      // 3. Guardar no PostgreSQL (para o utilizador ter o histórico)
+      // 3. Guardar no PostgreSQL
       const savedDecision = await this.prisma.decision.create({
         data: {
           userId: userId,
           problemText: problem,
-          aiResponse: aiResponse,
+          aiResponse: aiResponseText,
         },
       });
 
-      // 4. Devolver ao Frontend
       return savedDecision;
 
-    } catch (error) {
-      console.error('Erro na IA:', error);
+    } catch (error: any) {
+      console.error('Erro na IA ou Base de Dados:', error);
+      
+      // 4. Defesa contra o Token Fantasma (P2003)
+      if (error.code === 'P2003') {
+        // Finge que gravou e devolve a resposta para o telemóvel não encravar!
+        return {
+          id: 'temp-id',
+          userId: userId,
+          problemText: problem,
+          aiResponse: aiResponseText || "Vai tratar da tua vida. Não tenhas desculpas.",
+        };
+      }
+
       throw new InternalServerErrorException('A IA falhou em tomar uma decisão.');
     }
-    
   }
-  // Adiciona isto por baixo do método getDecision
+
   async getHistory(userId: string) {
     return this.prisma.decision.findMany({
       where: { userId: userId },
-      orderBy: { createdAt: 'desc' }, // As mais recentes aparecem primeiro
+      orderBy: { createdAt: 'desc' },
     });
   }
 }
