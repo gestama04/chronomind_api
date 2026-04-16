@@ -16,7 +16,7 @@ export class DecisionService {
     try {
       // 1. Configurar a personalidade
       const model = this.genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         systemInstruction: `You are 'Ruthless', an uncompromising AI decision maker. 
         The user will give you Option A and Option B. They are overthinking. 
         YOUR RULES:
